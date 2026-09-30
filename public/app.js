@@ -188,6 +188,10 @@ async function analyzeText(text, immediate = false) {
       }
       if (result.error === "missing_api_key" && !hostedMode) return applyResult(demoResult(clean));
       if (!response.ok) throw new Error(result.error);
+      if (hostedMode && result.analysisPerspective !== "recipient") {
+        setStatus("분석 서버가 업데이트 중입니다. 잠시 후 다시 시도해 주세요.", "waiting");
+        return;
+      }
       lastAnalyzedText = clean;
       applyResult(result);
     } catch (error) {

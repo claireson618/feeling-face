@@ -1,4 +1,4 @@
-const STATIC_CACHE = "feeling-face-v4";
+const STATIC_CACHE = "feeling-face-v5";
 const STATIC_FILES = ["./", "./styles.css", "./layout-fix.css", "./config.js", "./app.js", "./emotions.js", "./face3d.bundle.js", "./models/facecap.glb", "./basis/basis_transcoder.js", "./basis/basis_transcoder.wasm", "./icon.svg", "./manifest.webmanifest"]
   .map((path) => new URL(path, self.registration.scope).href);
 

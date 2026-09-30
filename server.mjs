@@ -157,6 +157,7 @@ async function analyze(text) {
     Object.keys(emotions).map((key) => [key, Number(data.answers[`signal_${key}`]?.noul || 0)]),
   );
   const result = {
+    analysisPerspective: "recipient",
     emotion: emotion.choice,
     confidence: emotion.confidence,
     probabilities,
