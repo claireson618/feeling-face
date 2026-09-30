@@ -5,6 +5,7 @@ project_dir="${0:A:h}/.."
 app_dir="$project_dir/Feeling Face.app"
 contents_dir="$app_dir/Contents"
 
+(cd "$project_dir" && npm run build:client)
 mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources"
 cp "$project_dir/macos/Info.plist" "$contents_dir/Info.plist"
 cp "$project_dir/macos/FeelingFace.icns" "$contents_dir/Resources/FeelingFace.icns"

@@ -7,3 +7,5 @@ macos/icon.svg.png
 macos/FeelingFace.icns
 *.zip
 site/
+public/face3d.bundle.js
+public/basis/

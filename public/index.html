@@ -15,7 +15,7 @@
       <header class="intro">
         <p class="eyebrow">JEV × FACIAL ACTION CODING</p>
         <h1>쓰는 순간,<br /><em>표정이 됩니다.</em></h1>
-        <p class="lede">문장을 쓰면 Jev가 핵심 6감정의 신호를 읽고, 얼굴 근육이 곧바로 반응합니다.</p>
+        <p class="lede">보낼 말을 쓰면 Jev가 받는 사람이 느낄 법한 감정 신호와 반응 강도를 추정합니다. 3D 얼굴은 그 가능성에 맞춰 움직입니다.</p>
 
         <form id="access-form" class="access-form" hidden>
           <label for="access-token">친구 전용 접근 코드</label>
@@ -26,10 +26,10 @@
 
         <form id="emotion-form">
           <div class="field-title">
-            <label for="message">지금 마음에 있는 말을 써 보세요</label>
+            <label for="message">상대에게 보낼 말을 써 보세요</label>
             <span id="character-count">0 / 1,000</span>
           </div>
-          <textarea id="message" maxlength="1000" placeholder="예: 결과가 곧 나온다는데 잘못될까 봐 계속 신경 쓰여…" autofocus></textarea>
+          <textarea id="message" maxlength="1000" placeholder="예: 네가 해냈다니 정말 기뻐! 오늘 같이 축하하자." autofocus></textarea>
           <div class="form-footer">
             <span class="live-state"><i id="live-dot"></i><span id="status">두 글자 이상 입력하면 자동으로 분석합니다.</span></span>
             <button type="submit">지금 분석 <span>↗</span></button>
@@ -37,24 +37,19 @@
         </form>
 
           <div class="examples" aria-label="예시 문장">
-          <button type="button" data-text="정말 오래 기다렸는데 드디어 해냈어!">기쁨</button>
-          <button type="button" data-text="결과가 곧 나온다는데 잘못될까 봐 계속 신경 쓰여.">두려움</button>
-          <button type="button" data-text="아무리 해도 계속 막히니까 너무 화가 나.">분노</button>
-          <button type="button" data-text="갑자기 이름을 불러서 깜짝 놀랐어.">놀람</button>
-          <button type="button" data-text="떠난 사람이 너무 그립고 마음이 허전해.">슬픔</button>
-          <button type="button" data-text="그 냄새가 너무 역겨워서 피하고 싶어.">혐오</button>
+          <button type="button" data-text="네가 해냈다니 정말 기뻐! 오늘 같이 축하하자.">기쁨</button>
+          <button type="button" data-text="네가 아끼던 반려동물이 떠났다는 소식을 들었어. 정말 마음 아프겠다.">슬픔</button>
+          <button type="button" data-text="네 허락 없이 네 사진을 올렸어. 항의해도 지우지 않을 거야.">분노</button>
+          <button type="button" data-text="지금 네 집 근처에 위험한 상황이 생겼대. 문 잠그고 있어.">두려움</button>
+          <button type="button" data-text="아무 말 안 했지만 사실 내일 깜짝 방문할 거야!">놀람</button>
+          <button type="button" data-text="네 음식에 벌레가 있었는데 그냥 먹으라고 했어.">혐오</button>
         </div>
       </header>
 
       <section class="stage" aria-live="polite">
         <div class="halo"></div>
-        <div class="result-copy">
-          <div class="emotion-head"><p id="emotion-label">중립</p><strong id="dominant-probability">—</strong></div>
-          <p class="emotion-probability-caption">이 감정이 문장에 드러날 가능성</p>
-          <p id="emotion-definition">문장을 쓰기 시작하면 얼굴과 확률이 함께 변합니다.</p>
-        </div>
-
-        <svg id="face" viewBox="0 0 440 540" role="img" aria-label="중립 표정의 사람 얼굴">
+        <div id="face-3d" class="face-3d" role="img" aria-label="받는 사람의 예상 표정"></div>
+        <svg id="face" class="face-fallback" viewBox="0 0 440 540" role="img" aria-label="받는 사람의 예상 표정">
           <defs>
             <linearGradient id="skin" x1="0" x2="1"><stop stop-color="#D98E6B"/><stop offset=".56" stop-color="#F2B593"/><stop offset="1" stop-color="#F7C6A7"/></linearGradient>
             <linearGradient id="neckSkin" x1="0" x2="1"><stop stop-color="#B96F53"/><stop offset="1" stop-color="#E9A07C"/></linearGradient>
@@ -117,25 +112,18 @@
         <aside class="probability-card">
           <div class="probability-heading"><span>주된 감정 선택 확신도</span><strong id="confidence">—</strong></div>
           <div id="probabilities" class="probabilities"></div>
-          <p class="confidence-note">아래 막대는 각 감정의 독립 신호 확률입니다. 합계가 100%일 필요는 없습니다.</p>
+          <p class="confidence-note">위 확신도는 주된 반응의 선택이 얼마나 뚜렷한지를 뜻합니다. 아래 막대는 감정별 독립 추정 확률로, 합계가 100%일 필요는 없습니다.</p>
+          <div class="intensity-panel">
+            <div class="intensity-heading"><span>예상 반응 강도</span><strong id="intensity-value">—</strong></div>
+            <div class="intensity-track" role="meter" aria-label="예상 반응 강도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="intensity-meter"><span id="intensity-fill"></span></div>
+            <p id="intensity-caption">문장을 입력하면 감정의 세기가 표시됩니다.</p>
+          </div>
         </aside>
       </section>
 
-      <section class="details">
-        <div>
-          <p class="eyebrow">ACTIVE MUSCLE MAP</p>
-          <h2>지금 움직이는 얼굴</h2>
-          <ul id="au-list"><li><b>AU0</b><span>휴식</span><em>두드러진 근육 수축 없음</em></li></ul>
-        </div>
-        <div>
-          <p class="eyebrow">HOW IT MOVES</p>
-          <h2>실시간 분석 방식</h2>
-          <p class="method">입력이 0.2초간 멈추면 Jev가 주된 감정, 6개 감정의 신호 확률과 표현 강도를 함께 판단합니다. 얼굴은 주된 감정의 표정에 다른 감정의 움직임을 조금 섞어 자연스럽게 이어집니다. 화면의 확률은 문장에 대한 모델 판단이며 실제 마음의 측정값은 아닙니다.</p>
-        </div>
-      </section>
-
       <section class="note">
-        <p><strong>해석의 한계.</strong> FACS는 보이는 얼굴 움직임을 기술하는 체계이지 사람의 내면을 확정하는 진단 도구가 아닙니다. 이 작품은 사용자가 쓴 문장의 정서적 인상을 시각화하며, 문화·상황·개인에 따라 실제 표정은 달라질 수 있습니다.</p>
+        <p><strong>해석의 한계.</strong> 0.2초간 입력이 멈추면 Jev가 가능한 반응을 다시 추정합니다. 확률은 모델의 문장 해석이고, 강도는 별도의 0–4 척도를 0–100으로 바꾼 값입니다. 상대방의 실제 마음이나 표정을 측정한 것은 아닙니다. 관계와 맥락이 부족하면 중립도 가능하며, 사람마다 반응은 달라집니다.</p>
+        <p>3D 얼굴: <a href="https://www.bannaflak.com/face-cap/" target="_blank" rel="noopener noreferrer">Face Cap / Bannaflak</a> · <a href="https://threejs.org/examples/webgl_morphtargets_face.html" target="_blank" rel="noopener noreferrer">Three.js 예제</a></p>
       </section>
     </main>
     <script src="./config.js"></script>

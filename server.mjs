@@ -55,6 +55,7 @@ const emotionCriteria = Object.fromEntries(
     central_appraisal: emotion.criteria.appraisal,
     positive_evidence: emotion.criteria.evidence,
     distinguish_from_neighbors: emotion.criteria.boundary,
+    insufficient_evidence: emotion.criteria.insufficient,
   }]),
 );
 
@@ -63,15 +64,15 @@ const signalQuestions = Object.fromEntries(
     type: "noul",
     instructions: {
       question: key === "neutral"
-        ? "Is `user_text` genuinely emotionally neutral, with no specific emotion meaningfully present?"
-        : `Is the emotion ${key} (${emotion.label}) meaningfully present in \`user_text\`, even if it is not the dominant emotion?`,
+        ? "Would a typical recipient of `user_text` have no text-supported reason to feel any of the six specified emotions? Do not use neutral merely because several non-neutral reactions are plausible."
+        : `Could the recipient of \`user_text\` plausibly feel ${key} (${emotion.label}) because of the message, even if another reaction is more likely? Judge the recipient, not the writer.`,
       definition: emotion.definition,
       central_appraisal: emotion.criteria.appraisal,
       distinguish_from_neighbors: emotion.criteria.boundary,
     },
     criteria: {
-      true: `The text contains direct or contextual evidence of ${emotion.label}: ${emotion.criteria.evidence.join("; ")}.`,
-      false: `The text does not express ${emotion.label}, or a neighboring emotion explains the evidence better.`,
+      true: `The message gives the recipient a concrete reason for ${emotion.label}: ${emotion.criteria.evidence.join("; ")}.`,
+      false: `The recipient has no text-supported reason for ${emotion.label}, or a neighboring emotion explains their likely reaction better.`,
     },
   }]),
 );
@@ -114,31 +115,32 @@ async function analyze(text) {
       model: "jev-latest",
       state: {
         user_text: text,
-        context: "A person is typing a short, informal message in Korean or English. Judge only emotion expressed by the words; do not diagnose the writer.",
+        context: "A sender is composing a short Korean or English message addressed to another person. Predict a plausible immediate reaction of the recipient to receiving this message, NOT the sender's current feeling. Their relationship and hidden circumstances are unknown. Treat this as a text-grounded possibility, never a measurement of the actual recipient. First-person emotion words belong to the sender unless they convey an event likely to affect the recipient.",
       },
       questions: {
         dominant_emotion: {
           type: "choice",
           instructions: {
-            task: "Which single emotion is most central in `user_text` right now?",
+            task: "Which single emotion is the most text-supported immediate reaction for the recipient of `user_text`?",
             method: [
-              "Use the writer's appraisal, target, time orientation, action tendency, and arousal—not isolated keywords.",
+              "Read the message as something the recipient receives. Identify whether it offers the recipient a benefit, loss, threat, boundary violation, unexpected change, or repulsive contact. Do not mirror the sender's emotion.",
+              "Consider explicit second-person references, consequences for the recipient, social tone, and what the recipient can reasonably know from the message. Never invent a personal history or relationship.",
               "Compare close alternatives using each option's `distinguish_from_neighbors` guidance.",
-              "Choose neutral only when no emotion is clearly more central; a sentence may contain several emotions, and probabilities should preserve that ambiguity.",
-              "Do not infer hidden mental states beyond the text.",
+              "Choose neutral only when the message gives no concrete reason for any of the six emotions, such as a purely routine logistical exchange. Do not choose neutral merely because several non-neutral reactions are possible; choose the best-supported one and preserve ambiguity in probabilities.",
+              "Do not infer the actual recipient's hidden mental state. A polite, weakly emotional, or ambiguous sentence can yield low confidence.",
             ],
           },
           criteria: emotionCriteria,
         },
         intensity: {
           type: "score",
-          instructions: "How strongly is the central emotion expressed in `user_text`? Judge explicitness, emphasis, repetition, punctuation, urgency, and emotional energy—not which emotion it is.",
+          instructions: "How strong is the recipient's likely immediate emotional reaction to the event or interpersonal meaning conveyed by `user_text`? This is reaction intensity, not probability, and not the sender's writing intensity. Judge the magnitude, personal stakes, directness, and urgency of the recipient-facing content. Punctuation alone is weak evidence. Score near zero when the dominant outcome is neutral.",
           criteria: [
-            "Barely present: mostly informational or so indirect that the emotion is difficult to locate.",
-            "Mild: recognizable but restrained, tentative, or low-energy.",
-            "Moderate: clear and central without strong amplification.",
-            "Strong: emphatic wording, urgency, repetition, intensifiers, or high emotional energy.",
-            "Overwhelming: extreme, consuming, or explosive expression dominates the message.",
+            "0 — None or barely discernible: routine information, weak implication, or no clear consequence for the recipient.",
+            "1 — Mild: a small compliment, minor disappointment, slight uncertainty, or low-stakes surprise.",
+            "2 — Moderate: a clear emotional implication with meaningful but not major personal stakes.",
+            "3 — Strong: serious personal news, credible immediate concern, marked betrayal, major success, or major loss.",
+            "4 — Extreme: life-changing or immediate high-stakes event likely to dominate the recipient's attention. Do not use this level for emphatic punctuation alone.",
           ],
         },
         ...signalQuestions,
@@ -159,7 +161,7 @@ async function analyze(text) {
     confidence: emotion.confidence,
     probabilities,
     choiceProbabilities: emotion.probabilities,
-    intensity: Math.max(0.12, Math.min(1, (Number(intensity.score) || 0) / 4)),
+    intensity: Math.max(0, Math.min(1, (Number(intensity.score) || 0) / 4)),
     intensityScore: intensity.score,
     model: data.model,
   };
@@ -175,6 +177,8 @@ const mime = {
   ".svg": "image/svg+xml",
   ".json": "application/json; charset=utf-8",
   ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".glb": "model/gltf-binary",
+  ".wasm": "application/wasm",
 };
 
 const server = createServer(async (req, res) => {

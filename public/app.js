@@ -2,7 +2,7 @@ import { emotions, emotionOrder } from "./emotions.js";
 
 const $ = (id) => document.getElementById(id);
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
-const neutralDistribution = () => Object.fromEntries(emotionOrder.map((key) => [key, key === "neutral" ? 1 : 0]));
+const emptyDistribution = () => Object.fromEntries(emotionOrder.map((key) => [key, 0]));
 const configuredApiBase = String(window.FEELING_FACE_API_BASE_URL || "").trim();
 const hostedMode = Boolean(configuredApiBase);
 const analyzeUrl = hostedMode ? new URL("/api/analyze", configuredApiBase).href : "/api/analyze";
@@ -12,6 +12,8 @@ let debounceTimer;
 let activeController;
 let requestSequence = 0;
 let lastAnalyzedText = "";
+let face3D;
+let latestFaceState = { probabilities: emptyDistribution(), intensity: 0, emotion: "neutral" };
 
 function setPath(id, d) { $(id).setAttribute("d", d); }
 function weightedPose(probabilities, intensity, leadingEmotion) {
@@ -88,17 +90,15 @@ function renderFace(probabilities, intensity = 1, leadingEmotion = "neutral") {
 
   const leading = emotions[leadingEmotion] || emotions.neutral;
   $("face").dataset.emotion = leadingEmotion;
-  $("face").setAttribute("aria-label", `${leading.label} 중심의 혼합 표정`);
-  $("emotion-label").textContent = leading.label;
-  $("emotion-definition").textContent = leading.definition;
-  $("au-list").innerHTML = leading.aus.map(({ au, action, muscle }) => `<li><b>${au}</b><span>${action}</span><em>${muscle}</em></li>`).join("");
+  $("face").setAttribute("aria-label", `받는 사람에게 예상되는 ${leading.label} 표정`);
+  $("face-3d").setAttribute("aria-label", `받는 사람에게 예상되는 ${leading.label} 표정`);
 }
 
-function probabilityBars(probabilities = neutralDistribution(), leadingEmotion = "neutral") {
+function probabilityBars(probabilities = emptyDistribution(), leadingEmotion = "neutral") {
   $("probabilities").innerHTML = Object.entries(probabilities)
     .sort((a, b) => b[1] - a[1])
     .map(([emotion, probability], index) => `
-          <div class="probability ${emotion === leadingEmotion ? "leading" : ""}" title="${emotions[emotion]?.label || emotion}이 문장에 존재할 Jev의 독립 확률">
+          <div class="probability ${emotion === leadingEmotion ? "leading" : ""} ${emotion === "neutral" ? "neutral" : ""}" title="받는 사람이 ${emotions[emotion]?.label || emotion} 반응을 보일 Jev의 독립 추정 확률">
         <span><i>${String(index + 1).padStart(2, "0")}</i>${emotions[emotion]?.label || emotion}</span>
         <div><b style="width:${Math.max(1, probability * 100)}%"></b></div>
         <em>${(probability * 100).toFixed(probability < .01 ? 1 : 0)}%</em>
@@ -107,16 +107,16 @@ function probabilityBars(probabilities = neutralDistribution(), leadingEmotion =
 
 function demoResult(text) {
   const hints = [
-    [/(기뻐|해냈|신나|좋아|사랑|소중|다행)/, "joy"],
-    [/(슬퍼|허탈|외로|상실|그립)/, "sadness"],
-    [/(부당|용서할 수|화가|막혀|답답)/, "anger"],
-    [/(무서|도망|위험|걱정|불안|신경 쓰)/, "fear"],
-    [/(갑자기|깜짝|예상 못)/, "surprise"],
-    [/(역겨|더러|토할)/, "disgust"],
+    [/(축하|고마워|자랑스러|좋은 소식|사랑해)/, "joy"],
+    [/(떠났|미안해|작별|소중한.*잃)/, "sadness"],
+    [/(네 허락 없이|지우지 않을|속였|배신)/, "anger"],
+    [/(위험|조심해|다칠|무서운)/, "fear"],
+    [/(깜짝|사실은|갑자기|비밀이었)/, "surprise"],
+    [/(벌레|역겨|더러|상한 음식)/, "disgust"],
   ];
   const leading = hints.find(([pattern]) => pattern.test(text))?.[1] || "neutral";
   const probabilities = Object.fromEntries(emotionOrder.map((key) => [key, key === leading ? .67 : .33 / (emotionOrder.length - 1)]));
-  return { emotion: leading, probabilities, intensity: .68, confidence: .58, model: "local-demo" };
+  return { emotion: leading, probabilities, intensity: .68, intensityScore: 2.72, confidence: .58, model: "local-demo" };
 }
 
 function setStatus(message, state = "idle") {
@@ -131,10 +131,17 @@ function updateAccessView() {
 
 function applyResult(result) {
   renderFace(result.probabilities, result.intensity, result.emotion);
+  latestFaceState = result;
+  face3D?.update(result.probabilities, result.intensity, result.emotion);
   probabilityBars(result.probabilities, result.emotion);
-  $("dominant-probability").textContent = result.empty ? "—" : `${Math.round((result.probabilities[result.emotion] || 0) * 100)}%`;
-  $("confidence").textContent = `${Math.round(result.confidence * 100)}%`;
-  setStatus(`${result.model}${result.cached ? " · cache" : ""} · 강도 ${Math.round(result.intensity * 100)}%`, "ready");
+  $("confidence").textContent = result.empty ? "—" : `${Math.round(result.confidence * 100)}%`;
+  const level = result.empty ? 0 : clamp(Number(result.intensityScore ?? result.intensity * 4) / 4);
+  const percent = Math.round(level * 100);
+  $("intensity-value").textContent = result.empty ? "—" : `${percent}%`;
+  $("intensity-fill").style.width = `${percent}%`;
+  $("intensity-meter").setAttribute("aria-valuenow", String(percent));
+  $("intensity-caption").textContent = result.empty ? "문장을 입력하면 감정의 세기가 표시됩니다." : ["거의 드러나지 않음", "약한 반응", "중간 정도의 반응", "강한 반응", "매우 강한 반응"][Math.min(4, Math.round(level * 4))];
+  setStatus(`${result.model}${result.cached ? " · cache" : ""} · 받는 사람의 반응 예측`, "ready");
 }
 
 async function analyzeText(text, immediate = false) {
@@ -145,7 +152,7 @@ async function analyzeText(text, immediate = false) {
   $("character-count").textContent = `${text.length.toLocaleString()} / 1,000`;
   if (!clean) {
     lastAnalyzedText = "";
-    applyResult({ emotion: "neutral", probabilities: neutralDistribution(), intensity: 0, confidence: 0, model: "대기", empty: true });
+    applyResult({ emotion: "neutral", probabilities: emptyDistribution(), intensity: 0, intensityScore: 0, confidence: 0, model: "대기", empty: true });
     setStatus("두 글자 이상 입력하면 자동으로 분석합니다.", "idle");
     return;
   }
@@ -221,10 +228,18 @@ document.querySelectorAll("[data-text]").forEach((button) => button.addEventList
   analyzeText(button.dataset.text, true);
 }));
 
-const start = neutralDistribution();
+const start = emptyDistribution();
 renderFace(start, 0, "neutral");
 probabilityBars(start, "neutral");
 updateAccessView();
+
+import("./face3d.bundle.js")
+  .then(({ init3DFace }) => init3DFace($("face-3d"), () => document.querySelector(".stage").classList.add("is-3d")))
+  .then((controller) => {
+    face3D = controller;
+    controller.update(latestFaceState.probabilities, latestFaceState.intensity, latestFaceState.emotion);
+  })
+  .catch((error) => console.warn("3D 얼굴을 불러오지 못해 2D 얼굴을 표시합니다.", error));
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register(new URL("./sw.js", import.meta.url)).catch(() => {});
