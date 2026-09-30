@@ -17,6 +17,8 @@
 
 Render는 `PORT`와 `RENDER`를 자동으로 설정합니다. 서버는 Render 환경에서 `0.0.0.0`에 바인딩하며, 필수 비밀값이 빠지면 시작하지 않습니다. 하루 호출 제한은 서버 메모리 기반이라 재시작 시 초기화됩니다. 비용 상한을 엄격하게 보장하지 않으므로 TypeSafe 계정 측 사용량도 확인해야 합니다.
 
+이 서비스는 Render의 **Public Git Repository URL** 방식으로 연결했습니다. 이 방식은 자동 재배포를 지원하지 않으므로 서버 소스를 수정해 GitHub에 올린 뒤에는 Render 서비스의 **Manual Deploy → Deploy latest commit**을 실행해야 합니다.
+
 ## GitHub Pages 프런트엔드
 
 1. GitHub 저장소의 Settings → Pages에서 Source를 **GitHub Actions**로 설정합니다.
