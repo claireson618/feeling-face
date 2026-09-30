@@ -1,0 +1,12 @@
+{
+  "name": "feeling-face",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check public/emotions.js && node --check scripts/build-pages.mjs",
+    "build:pages": "node scripts/build-pages.mjs"
+  }
+}

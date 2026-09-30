@@ -1,0 +1,12 @@
+{
+  "name": "Feeling Face — Jev Emotion Mirror",
+  "short_name": "Feeling Face",
+  "description": "문장의 감정 확률을 얼굴 표정으로 바꾸는 Jev 기반 인터랙티브 도구",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3efe7",
+  "theme_color": "#f3efe7",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

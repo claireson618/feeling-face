@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3efe7" />
+    <title>Feeling Face · Jev</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./layout-fix.css" />
+  </head>
+  <body>
+    <main>
+      <header class="intro">
+        <p class="eyebrow">JEV × FACIAL ACTION CODING</p>
+        <h1>쓰는 순간,<br /><em>표정이 됩니다.</em></h1>
+        <p class="lede">문장을 쓰면 Jev가 핵심 6감정의 신호를 읽고, 얼굴 근육이 곧바로 반응합니다.</p>
+
+        <form id="access-form" class="access-form" hidden>
+          <label for="access-token">친구 전용 접근 코드</label>
+          <div class="access-row"><input id="access-token" type="password" autocomplete="off" required placeholder="전달받은 접근 코드" /><button type="submit">연결</button></div>
+          <p>코드는 이 탭이 열려 있는 동안에만 저장됩니다.</p>
+        </form>
+        <button id="change-access" class="change-access" type="button" hidden>접근 코드 변경</button>
+
+        <form id="emotion-form">
+          <div class="field-title">
+            <label for="message">지금 마음에 있는 말을 써 보세요</label>
+            <span id="character-count">0 / 1,000</span>
+          </div>
+          <textarea id="message" maxlength="1000" placeholder="예: 결과가 곧 나온다는데 잘못될까 봐 계속 신경 쓰여…" autofocus></textarea>
+          <div class="form-footer">
+            <span class="live-state"><i id="live-dot"></i><span id="status">두 글자 이상 입력하면 자동으로 분석합니다.</span></span>
+            <button type="submit">지금 분석 <span>↗</span></button>
+          </div>
+        </form>
+
+          <div class="examples" aria-label="예시 문장">
+          <button type="button" data-text="정말 오래 기다렸는데 드디어 해냈어!">기쁨</button>
+          <button type="button" data-text="결과가 곧 나온다는데 잘못될까 봐 계속 신경 쓰여.">두려움</button>
+          <button type="button" data-text="아무리 해도 계속 막히니까 너무 화가 나.">분노</button>
+          <button type="button" data-text="갑자기 이름을 불러서 깜짝 놀랐어.">놀람</button>
+          <button type="button" data-text="떠난 사람이 너무 그립고 마음이 허전해.">슬픔</button>
+          <button type="button" data-text="그 냄새가 너무 역겨워서 피하고 싶어.">혐오</button>
+        </div>
+      </header>
+
+      <section class="stage" aria-live="polite">
+        <div class="halo"></div>
+        <div class="result-copy">
+          <div class="emotion-head"><p id="emotion-label">중립</p><strong id="dominant-probability">—</strong></div>
+          <p class="emotion-probability-caption">이 감정이 문장에 드러날 가능성</p>
+          <p id="emotion-definition">문장을 쓰기 시작하면 얼굴과 확률이 함께 변합니다.</p>
+        </div>
+
+        <svg id="face" viewBox="0 0 440 540" role="img" aria-label="중립 표정의 사람 얼굴">
+          <defs>
+            <linearGradient id="skin" x1="0" x2="1"><stop stop-color="#D98E6B"/><stop offset=".56" stop-color="#F2B593"/><stop offset="1" stop-color="#F7C6A7"/></linearGradient>
+            <linearGradient id="neckSkin" x1="0" x2="1"><stop stop-color="#B96F53"/><stop offset="1" stop-color="#E9A07C"/></linearGradient>
+            <radialGradient id="blush"><stop stop-color="#E86168" stop-opacity=".5"/><stop offset="1" stop-color="#E86168" stop-opacity="0"/></radialGradient>
+            <clipPath id="faceClip"><path d="M112 205c0-91 47-145 109-145s107 54 107 145v105c0 92-47 147-107 147S112 402 112 310Z"/></clipPath>
+          </defs>
+
+          <path class="neck" d="M174 423h94l18 117H151Z"/>
+          <path class="shoulders" d="M67 540c15-65 66-96 154-96s140 31 156 96"/>
+          <path class="ear left" d="M117 263c-45-20-37 83 6 69"/><path class="ear right" d="M323 263c45-20 37 83-6 69"/>
+          <path class="face-shape" d="M112 205c0-91 47-145 109-145s107 54 107 145v105c0 92-47 147-107 147S112 402 112 310Z"/>
+          <g clip-path="url(#faceClip)">
+            <ellipse id="blush-l" class="blush" cx="153" cy="320" rx="43" ry="25"/>
+            <ellipse id="blush-r" class="blush" cx="289" cy="320" rx="43" ry="25"/>
+            <path class="temple-shade" d="M112 195q22-74 66-104-33 107-22 248-27-35-44-74Z"/>
+          </g>
+          <path class="hair" d="M104 218C79 104 159 32 238 50c78 18 113 105 79 184l-26-48c-34 6-64-15-83-43-22 33-56 56-104 75Z"/>
+          <path class="hair-detail" d="M111 186q70-113 173-73M131 149q70-78 141-55"/>
+
+          <g class="forehead-lines">
+            <path id="forehead-1" d="M151 174q69-25 139 0"/><path id="forehead-2" d="M160 188q61-20 121 0"/>
+          </g>
+          <g class="brows">
+            <path id="brow-l" d="M137 222Q168 202 199 222"/>
+            <path id="brow-r" d="M242 222Q273 202 304 222"/>
+          </g>
+
+          <g class="eyes">
+            <path id="eye-white-l" class="eye-white" d="M139 260Q168 239 197 260Q168 278 139 260Z"/>
+            <path id="eye-white-r" class="eye-white" d="M244 260Q273 239 302 260Q273 278 244 260Z"/>
+            <ellipse id="iris-l" cx="169" cy="260" rx="8" ry="10"/><ellipse id="iris-r" cx="273" cy="260" rx="8" ry="10"/>
+            <circle id="pupil-l" cx="169" cy="260" r="3.5"/><circle id="pupil-r" cx="273" cy="260" r="3.5"/>
+            <path id="lower-lid-l" class="lid" d="M142 266q26 17 52 0"/><path id="lower-lid-r" class="lid" d="M247 266q26 17 52 0"/>
+            <path id="crow-l" class="fine-line" d="M134 259l-14-3m16 10-13 5"/><path id="crow-r" class="fine-line" d="M307 259l14-3m-16 10 13 5"/>
+          </g>
+
+          <g class="nose">
+            <path id="nose-bridge" d="M220 261c-4 20-9 45 4 54 8 6 18 2 22-4"/>
+            <path id="nostrils" d="M199 316q20 11 43 0"/>
+            <path id="nose-wrinkle-1" class="fine-line" d="M194 291q27-13 54 0"/>
+            <path id="nose-wrinkle-2" class="fine-line" d="M198 301q23-10 46 0"/>
+          </g>
+
+          <g class="cheeks">
+            <path id="cheek-l" class="fine-line" d="M137 307q21-16 43-3"/><path id="cheek-r" class="fine-line" d="M262 304q22-13 43 3"/>
+            <path id="nasolabial-l" class="fine-line" d="M171 316q-12 28-7 54"/><path id="nasolabial-r" class="fine-line" d="M271 316q12 28 7 54"/>
+          </g>
+
+          <g class="mouth">
+            <path id="mouth-cavity" d="M164 365Q221 347 278 365Q221 389 164 365Z"/>
+            <path id="teeth" d="M172 365q49-13 98 0q-49 9-98 0Z"/>
+            <path id="upper-lip" d="M164 365Q194 347 221 359Q248 347 278 365Q221 374 164 365Z"/>
+            <path id="lower-lip" d="M164 365Q221 390 278 365Q250 399 221 397Q192 399 164 365Z"/>
+            <path id="lip-press" class="fine-line" d="M172 368q49 4 98 0"/>
+            <path id="chin-line" class="fine-line" d="M190 412q31 12 62 0"/>
+          </g>
+          <path id="jaw" d="M151 363q10 83 70 90 60-7 70-90"/>
+        </svg>
+
+        <aside class="probability-card">
+          <div class="probability-heading"><span>주된 감정 선택 확신도</span><strong id="confidence">—</strong></div>
+          <div id="probabilities" class="probabilities"></div>
+          <p class="confidence-note">아래 막대는 각 감정의 독립 신호 확률입니다. 합계가 100%일 필요는 없습니다.</p>
+        </aside>
+      </section>
+
+      <section class="details">
+        <div>
+          <p class="eyebrow">ACTIVE MUSCLE MAP</p>
+          <h2>지금 움직이는 얼굴</h2>
+          <ul id="au-list"><li><b>AU0</b><span>휴식</span><em>두드러진 근육 수축 없음</em></li></ul>
+        </div>
+        <div>
+          <p class="eyebrow">HOW IT MOVES</p>
+          <h2>실시간 분석 방식</h2>
+          <p class="method">입력이 0.2초간 멈추면 Jev가 주된 감정, 6개 감정의 신호 확률과 표현 강도를 함께 판단합니다. 얼굴은 주된 감정의 표정에 다른 감정의 움직임을 조금 섞어 자연스럽게 이어집니다. 화면의 확률은 문장에 대한 모델 판단이며 실제 마음의 측정값은 아닙니다.</p>
+        </div>
+      </section>
+
+      <section class="note">
+        <p><strong>해석의 한계.</strong> FACS는 보이는 얼굴 움직임을 기술하는 체계이지 사람의 내면을 확정하는 진단 도구가 아닙니다. 이 작품은 사용자가 쓴 문장의 정서적 인상을 시각화하며, 문화·상황·개인에 따라 실제 표정은 달라질 수 있습니다.</p>
+      </section>
+    </main>
+    <script src="./config.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

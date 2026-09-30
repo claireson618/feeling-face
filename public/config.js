@@ -1,0 +1,1 @@
+window.FEELING_FACE_API_BASE_URL = "";

@@ -1,0 +1,9 @@
+.env
+.DS_Store
+node_modules/
+*.app/
+macos/FeelingFace.iconset/
+macos/icon.svg.png
+macos/FeelingFace.icns
+*.zip
+site/
